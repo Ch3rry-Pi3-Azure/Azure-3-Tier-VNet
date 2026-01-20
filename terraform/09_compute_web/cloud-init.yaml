@@ -1,0 +1,324 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - python3
+  - python3-pip
+
+write_files:
+  - path: /etc/simpleapp/env
+    permissions: "0644"
+    content: |
+      APP_TIER_URL=${app_tier_url}
+  - path: /opt/simpleapp/app.py
+    permissions: "0755"
+    content: |
+      from flask import Flask, Response, jsonify
+      import html
+      import json
+      import os
+      import urllib.request
+
+      app = Flask(__name__)
+      APP_TIER_URL = os.environ.get("APP_TIER_URL", "").rstrip("/")
+
+      CUSTOMERS_FALLBACK = [
+          {"id": 1, "name": "Ada Lovelace", "segment": "Analytics"},
+          {"id": 2, "name": "Alan Turing", "segment": "Engineering"},
+          {"id": 3, "name": "Katherine Johnson", "segment": "Operations"},
+      ]
+
+      def fetch_app_status():
+          if not APP_TIER_URL:
+              return {
+                  "status": "not-configured",
+                  "detail": "APP_TIER_URL not set",
+                  "db_status": "not-configured",
+                  "db_detail": "APP_TIER_URL not set",
+              }
+          try:
+              with urllib.request.urlopen(f"{APP_TIER_URL}/status", timeout=3) as resp:
+                  data = json.loads(resp.read().decode())
+              return {
+                  "status": data.get("status", "ok"),
+                  "detail": "reachable",
+                  "db_status": data.get("db_status", "unknown"),
+                  "db_detail": data.get("db_detail", ""),
+              }
+          except Exception as exc:
+              return {
+                  "status": "unreachable",
+                  "detail": str(exc),
+                  "db_status": "unknown",
+                  "db_detail": "",
+              }
+
+      def fetch_app_customers():
+          if not APP_TIER_URL:
+              return {"source": "not-configured", "items": CUSTOMERS_FALLBACK, "detail": "APP_TIER_URL not set"}
+          try:
+              with urllib.request.urlopen(f"{APP_TIER_URL}/customers", timeout=3) as resp:
+                  data = json.loads(resp.read().decode())
+              if isinstance(data, list):
+                  return {"source": "sql", "items": data, "detail": "legacy"}
+              items = data.get("items") or []
+              source = data.get("source", "unknown")
+              detail = data.get("detail", "")
+              if not items:
+                  items = CUSTOMERS_FALLBACK
+              return {"source": source, "items": items, "detail": detail}
+          except Exception as exc:
+              return {"source": "unreachable", "items": CUSTOMERS_FALLBACK, "detail": str(exc)}
+
+      def render_customer_row(customer):
+          name = html.escape(str(customer.get("name", "")))
+          cust_id = html.escape(str(customer.get("id", "")))
+          segment = customer.get("segment")
+          segment_html = ""
+          if segment:
+              segment_html = f" <span class='muted'>- {html.escape(str(segment))}</span>"
+          return f"<li><strong>{name}</strong> <span class='muted'>(id {cust_id})</span>{segment_html}</li>"
+
+      def render_index():
+          app_status = fetch_app_status()
+          status = app_status.get("status", "unknown")
+          detail = app_status.get("detail", "")
+          db_status = app_status.get("db_status", "unknown")
+          db_detail = app_status.get("db_detail", "")
+          pill_class = "ok" if status == "ok" else "warn" if status == "not-configured" else "down"
+          status_label = status.replace("-", " ").upper()
+          customers_payload = fetch_app_customers()
+          data_source = customers_payload.get("source", "unknown")
+          data_detail = customers_payload.get("detail", "")
+          rows = "\n".join(
+              render_customer_row(customer)
+              for customer in customers_payload.get("items", [])
+          )
+          app_url = APP_TIER_URL if APP_TIER_URL else "not configured"
+          app_url = html.escape(app_url)
+          detail = html.escape(detail)
+          db_detail = html.escape(str(db_detail))
+          data_detail = html.escape(str(data_detail))
+          data_source_label = html.escape(data_source.replace("-", " ").upper())
+          db_status = html.escape(str(db_status))
+          return f"""<!doctype html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>VNet Demo</title>
+        <style>
+          @import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600&display=swap");
+          :root {{
+            --bg: #0b1016;
+            --ink: #f5f3f0;
+            --muted: #97a3b6;
+            --accent: #4fd1c5;
+            --accent-2: #f0b86b;
+            --panel: rgba(18, 26, 36, 0.82);
+            --panel-border: #1f2a38;
+            --ok: #60d394;
+            --warn: #f0b86b;
+            --down: #ff6b6b;
+          }}
+          * {{
+            box-sizing: border-box;
+          }}
+          body {{
+            margin: 0;
+            font-family: "Space Grotesk", "Segoe UI", "Helvetica", sans-serif;
+            background:
+              radial-gradient(1100px circle at 10% 10%, rgba(79, 209, 197, 0.18), transparent 50%),
+              radial-gradient(900px circle at 92% 18%, rgba(240, 184, 107, 0.14), transparent 45%),
+              linear-gradient(160deg, #0b1016 0%, #0d141d 45%, #0a0f15 100%);
+            color: var(--ink);
+            min-height: 100vh;
+            position: relative;
+          }}
+          body::before {{
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+              linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 48px 48px;
+            opacity: 0.25;
+            pointer-events: none;
+          }}
+          .wrap {{
+            max-width: 1040px;
+            margin: 0 auto;
+            padding: 40px 24px 64px;
+            position: relative;
+            z-index: 1;
+          }}
+          .hero {{
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            animation: fadeIn 0.7s ease both;
+          }}
+          .hero h1 {{
+            font-family: "DM Serif Display", "Times New Roman", serif;
+            font-size: 46px;
+            margin: 0 0 10px;
+            letter-spacing: 0.01em;
+          }}
+          .tagline {{
+            margin: 0;
+            color: var(--muted);
+            max-width: 520px;
+            font-size: 16px;
+          }}
+          .pill {{
+            padding: 10px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: rgba(10, 15, 22, 0.8);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+          }}
+          .pill.ok {{ color: var(--ok); }}
+          .pill.warn {{ color: var(--warn); }}
+          .pill.down {{ color: var(--down); }}
+          .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-top: 28px;
+          }}
+          .card {{
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 18px 34px rgba(4, 8, 14, 0.55);
+            backdrop-filter: blur(10px);
+            animation: rise 0.7s ease both;
+          }}
+          .card h2 {{
+            margin: 0 0 12px;
+            font-size: 20px;
+            letter-spacing: 0.02em;
+          }}
+          .muted {{
+            color: var(--muted);
+            font-size: 14px;
+          }}
+          ul {{
+            margin: 0;
+            padding-left: 18px;
+          }}
+          a {{
+            color: var(--accent);
+            text-decoration: none;
+          }}
+          a:hover {{
+            text-decoration: underline;
+          }}
+          .meta {{
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--muted);
+          }}
+          .footer {{
+            margin-top: 28px;
+            color: var(--muted);
+            font-size: 13px;
+          }}
+          .card:nth-child(1) {{ animation-delay: 0.15s; }}
+          .card:nth-child(2) {{ animation-delay: 0.25s; }}
+          @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+          }}
+          @keyframes rise {{
+            from {{ opacity: 0; transform: translateY(16px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+          }}
+          @media (max-width: 720px) {{
+            .hero h1 {{ font-size: 36px; }}
+            .pill {{ align-self: flex-start; }}
+          }}
+        </style>
+      </head>
+      <body>
+        <div class="wrap">
+          <section class="hero">
+            <div>
+              <h1>VNet Demo</h1>
+              <p class="tagline">Public web tier fronting a private app tier inside the VNet.</p>
+            </div>
+            <div class="pill {pill_class}">app tier: {status_label}</div>
+          </section>
+          <section class="grid">
+            <div class="card">
+              <h2>Customers</h2>
+              <ul>
+                {rows}
+              </ul>
+              <p class="meta">Data source: {data_source_label} - {data_detail}</p>
+            </div>
+            <div class="card">
+              <h2>Live Endpoints</h2>
+              <ul>
+                <li><a href="/health">/health</a></li>
+                <li><a href="/customers">/customers</a></li>
+                <li><a href="/app-status">/app-status</a></li>
+              </ul>
+              <p class="muted">App tier URL (private): {app_url}</p>
+              <p class="muted">App status: {detail}</p>
+              <p class="muted">DB status: {db_status} - {db_detail}</p>
+              <p class="meta">App tier is only reachable inside the VNet.</p>
+            </div>
+          </section>
+          <div class="footer">Azure VNets & Subnets demo - Web VM</div>
+        </div>
+      </body>
+      </html>"""
+
+      @app.get("/")
+      def index():
+          return Response(render_index(), mimetype="text/html")
+
+      @app.get("/app-status")
+      def app_status():
+          return jsonify(fetch_app_status())
+
+      @app.get("/health")
+      def health():
+          return "ok", 200
+
+      @app.get("/customers")
+      def customers():
+          return jsonify(fetch_app_customers().get("items", CUSTOMERS_FALLBACK))
+
+      if __name__ == "__main__":
+          app.run(host="0.0.0.0", port=80)
+  - path: /etc/systemd/system/simpleapp.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Simple Flask app
+      After=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/bin/python3 /opt/simpleapp/app.py
+      Restart=always
+      User=root
+      EnvironmentFile=/etc/simpleapp/env
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - pip3 install flask
+  - systemctl daemon-reload
+  - systemctl enable simpleapp
+  - systemctl start simpleapp

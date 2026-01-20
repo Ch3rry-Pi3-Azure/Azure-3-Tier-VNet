@@ -1,0 +1,8 @@
+resource_group_name = null
+resource_group_name_prefix = "rg-vnet"
+location = "eastus2"
+tags = {
+  project = "vnets-subnets"
+  env     = "dev"
+  owner   = "unknown"
+}

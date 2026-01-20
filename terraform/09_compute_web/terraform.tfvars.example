@@ -1,0 +1,16 @@
+resource_group_name = "rg-vnet-example"
+location = "eastus2"
+subnet_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example/subnets/snet-web-example"
+lb_backend_pool_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/loadBalancers/lb-public-example/backendAddressPools/be-example"
+app_tier_url = "http://10.10.2.5:8080"
+vm_name = null
+vm_name_prefix = "vm-web"
+nic_name_prefix = "nic-web"
+vm_size = "Standard_D2s_v3"
+admin_username = "azureuser"
+admin_password = "ReplaceWithStrongPassword!"
+tags = {
+  project = "vnets-subnets"
+  env     = "dev"
+  owner   = "unknown"
+}

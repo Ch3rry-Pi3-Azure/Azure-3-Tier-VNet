@@ -1,0 +1,23 @@
+resource_group_name = "rg-vnet-example"
+location = "eastus2"
+subnet_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example/subnets/snet-app-example"
+app_port = 8080
+probe_path = "/health"
+lb_name = null
+lb_name_prefix = "lb-app"
+lb_sku = "Standard"
+vm_name = null
+vm_name_prefix = "vm-app"
+nic_name_prefix = "nic-app"
+vm_size = "Standard_D2s_v3"
+admin_username = "azureuser"
+admin_password = "ExamplePassword123!"
+sql_server_fqdn = "sql-vnet-example.database.windows.net"
+sql_database_name = "vnet-demo"
+sql_admin_login = "sqladmin"
+sql_admin_password = "ExamplePassword123!"
+tags = {
+  project = "vnets-subnets"
+  env     = "dev"
+  owner   = "unknown"
+}

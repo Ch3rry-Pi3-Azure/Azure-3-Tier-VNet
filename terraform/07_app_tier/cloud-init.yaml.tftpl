@@ -1,0 +1,147 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - python3
+  - python3-flask
+  - python3-pyodbc
+
+write_files:
+  - path: /etc/appservice/env
+    permissions: "0600"
+    content: |
+      SQL_SERVER_FQDN=${sql_server_fqdn}
+      SQL_DATABASE_NAME=${sql_database_name}
+      SQL_ADMIN_LOGIN=${sql_admin_login}
+      SQL_ADMIN_PASSWORD=${sql_admin_password}
+  - path: /opt/appservice/app.py
+    permissions: "0755"
+    content: |
+      from flask import Flask, jsonify
+      import os
+
+      try:
+          import pyodbc
+      except Exception as exc:
+          pyodbc = None
+          PYODBC_ERROR = str(exc)
+      else:
+          PYODBC_ERROR = ""
+
+      app = Flask(__name__)
+
+      SQL_SERVER = os.environ.get("SQL_SERVER_FQDN")
+      SQL_DATABASE = os.environ.get("SQL_DATABASE_NAME")
+      SQL_USER = os.environ.get("SQL_ADMIN_LOGIN")
+      SQL_PASSWORD = os.environ.get("SQL_ADMIN_PASSWORD")
+
+      FALLBACK_CUSTOMERS = [
+          {"id": 1, "name": "Ada Lovelace", "segment": "Analytics"},
+          {"id": 2, "name": "Alan Turing", "segment": "Engineering"},
+          {"id": 3, "name": "Katherine Johnson", "segment": "Operations"},
+      ]
+
+      def db_configured():
+          return all([SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD])
+
+      def connection_string():
+          return (
+              "Driver={ODBC Driver 18 for SQL Server};"
+              f"Server={SQL_SERVER};"
+              f"Database={SQL_DATABASE};"
+              f"UID={SQL_USER};"
+              f"PWD={SQL_PASSWORD};"
+              "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=5;"
+          )
+
+      def check_db():
+          if not db_configured():
+              return "not-configured", "missing SQL settings"
+          if pyodbc is None:
+              return "driver-missing", PYODBC_ERROR
+          try:
+              with pyodbc.connect(connection_string(), timeout=5) as conn:
+                  cursor = conn.cursor()
+                  cursor.execute("SELECT 1")
+                  cursor.fetchone()
+              return "ok", "reachable"
+          except Exception as exc:
+              return "error", str(exc)
+
+      def fetch_customers():
+          if not db_configured() or pyodbc is None:
+              reason = "missing SQL settings" if not db_configured() else PYODBC_ERROR
+              return "fallback", FALLBACK_CUSTOMERS, reason
+          try:
+              with pyodbc.connect(connection_string(), timeout=5) as conn:
+                  cursor = conn.cursor()
+                  rows = cursor.execute(
+                      "SELECT TOP (12) customer_id, name, segment, last_update "
+                      "FROM dbo.demo_customers ORDER BY customer_id"
+                  ).fetchall()
+              items = []
+              for row in rows:
+                  items.append(
+                      {
+                          "id": int(row[0]),
+                          "name": str(row[1]),
+                          "segment": str(row[2]),
+                          "last_update": row[3].isoformat() if row[3] else None,
+                      }
+                  )
+              if not items:
+                  return "empty", FALLBACK_CUSTOMERS, "no rows returned"
+              return "sql", items, "ok"
+          except Exception as exc:
+              return "error", FALLBACK_CUSTOMERS, str(exc)
+
+      @app.get("/health")
+      def health():
+          return "ok", 200
+
+      @app.get("/status")
+      def status():
+          db_status, db_detail = check_db()
+          return jsonify(
+              {
+                  "service": "app-tier",
+                  "status": "ok",
+                  "db_status": db_status,
+                  "db_detail": db_detail,
+              }
+          )
+
+      @app.get("/customers")
+      def customers():
+          source, items, detail = fetch_customers()
+          return jsonify({"source": source, "items": items, "detail": detail})
+
+      if __name__ == "__main__":
+          app.run(host="0.0.0.0", port=${app_port})
+  - path: /etc/systemd/system/appservice.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=App tier Flask service
+      After=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/bin/python3 /opt/appservice/app.py
+      Restart=always
+      User=root
+      EnvironmentFile=/etc/appservice/env
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - sudo apt-get update
+  - sudo apt-get install -y curl apt-transport-https ca-certificates gnupg
+  - curl -sS https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc.gpg >/dev/null
+  - curl -sS https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list >/dev/null
+  - sudo apt-get update
+  - sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+  - systemctl daemon-reload
+  - systemctl enable appservice
+  - systemctl start appservice

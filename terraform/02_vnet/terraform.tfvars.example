@@ -1,0 +1,10 @@
+resource_group_name = "rg-vnet-example"
+location = "eastus2"
+vnet_name = null
+vnet_name_prefix = "vnet-main"
+address_space = ["10.10.0.0/16"]
+tags = {
+  project = "vnets-subnets"
+  env     = "dev"
+  owner   = "unknown"
+}

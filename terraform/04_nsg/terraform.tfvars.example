@@ -1,0 +1,18 @@
+resource_group_name = "rg-vnet-example"
+location = "eastus2"
+subnet_ids_by_key = {
+  web = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example/subnets/snet-web-example"
+  app = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example/subnets/snet-app-example"
+  db  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example/subnets/snet-db-example"
+}
+subnet_cidrs = {
+  web = "10.10.1.0/24"
+  app = "10.10.2.0/24"
+  db  = "10.10.3.0/24"
+}
+nsg_name_prefix = "nsg"
+tags = {
+  project = "vnets-subnets"
+  env     = "dev"
+  owner   = "unknown"
+}

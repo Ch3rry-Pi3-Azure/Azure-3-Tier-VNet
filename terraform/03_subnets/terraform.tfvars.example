@@ -1,0 +1,9 @@
+resource_group_name = "rg-vnet-example"
+virtual_network_name = "vnet-main-example"
+subnet_name_prefix = "snet"
+subnet_name_suffix = "brave-otter"
+subnet_cidrs = {
+  web = "10.10.1.0/24"
+  app = "10.10.2.0/24"
+  db  = "10.10.3.0/24"
+}

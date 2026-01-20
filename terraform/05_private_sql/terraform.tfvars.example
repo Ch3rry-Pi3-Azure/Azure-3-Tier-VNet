@@ -1,0 +1,27 @@
+resource_group_name = "rg-vnet-example"
+location = "eastus2"
+virtual_network_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example"
+subnet_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example/subnets/snet-db-example"
+sql_server_name = null
+sql_server_name_prefix = "sql-vnet"
+sql_admin_login = "sqladmin"
+sql_admin_password = "ExamplePassword123!"
+azuread_admin_login = "user@example.com"
+azuread_admin_object_id = "00000000-0000-0000-0000-000000000000"
+database_name = "vnet-demo"
+database_sku_name = "GP_S_Gen5_1"
+max_size_gb = 1
+min_capacity = 0.5
+auto_pause_delay_in_minutes = 60
+public_network_access_enabled = true
+allow_azure_services = true
+client_ip_address = "203.0.113.10"
+private_dns_zone_name = "privatelink.database.windows.net"
+private_endpoint_name_prefix = "pe-sql"
+private_dns_zone_link_name_prefix = "link-sql"
+private_dns_zone_group_name = "sql-dns"
+tags = {
+  project = "vnets-subnets"
+  env     = "dev"
+  owner   = "unknown"
+}

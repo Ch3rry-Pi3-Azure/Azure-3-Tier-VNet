@@ -1,0 +1,18 @@
+resource_group_name = "rg-vnet-example"
+location = "eastus2"
+nat_gateway_name = null
+nat_gateway_name_prefix = "nat-vnet"
+public_ip_name = null
+public_ip_name_prefix = "pip-nat"
+public_ip_sku = "Standard"
+nat_gateway_sku = "Standard"
+idle_timeout_in_minutes = 10
+subnet_ids = [
+  "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example/subnets/snet-app-example",
+  "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vnet-example/providers/Microsoft.Network/virtualNetworks/vnet-main-example/subnets/snet-web-example"
+]
+tags = {
+  project = "vnets-subnets"
+  env     = "dev"
+  owner   = "unknown"
+}

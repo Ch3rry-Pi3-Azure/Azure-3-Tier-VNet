@@ -1,0 +1,16 @@
+resource_group_name = "rg-vnet-example"
+location = "eastus2"
+lb_name = null
+lb_name_prefix = "lb-public"
+public_ip_name = null
+public_ip_name_prefix = "pip-lb"
+lb_sku = "Standard"
+public_ip_sku = "Standard"
+frontend_port = 80
+backend_port = 80
+probe_path = "/health"
+tags = {
+  project = "vnets-subnets"
+  env     = "dev"
+  owner   = "unknown"
+}

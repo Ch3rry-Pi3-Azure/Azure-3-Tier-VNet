@@ -45,15 +45,15 @@ At this stage the deploy script provisions the resource group, virtual network, 
 flowchart LR
     Internet("(Internet)") -->|Public HTTP/S| LB["Azure Load Balancer (Public)"]
     subgraph VNet["vnet-main (10.10.0.0/16)"]
-        subgraph Web["Subnet: snet-web (10.10.1.0/24)"]
+        subgraph Web["snet-web (10.10.1.0/24)"]
             WebNSG["NSG: nsg-web"]
             WebVM["VM/VMSS (Flask)"]
         end
-        subgraph App["Subnet: snet-app (10.10.2.0/24)"]
+        subgraph App["snet-app (10.10.2.0/24)"]
             AppNSG["NSG: nsg-app"]
             AppVM["VM/VMSS (API/service)"]
         end
-        subgraph Db["Subnet: snet-db (10.10.3.0/24)"]
+        subgraph Db["snet-db (10.10.3.0/24)"]
             DbNSG["NSG: nsg-db"]
             PE[Private Endpoint]
             SQL[Azure SQL DB]

@@ -224,7 +224,7 @@ powershell -ExecutionPolicy Bypass -File scripts\tests.ps1 -SeedSql
 ## Stage 1: VNet
 ```mermaid
 flowchart LR
-    VNet["VNet: vnet-main <br/> (10.10.0.0/16)"]
+    VNet["vnet-main <br/> (10.10.0.0/16)"]
 ```
 
 ## Stage 2: Subnets
@@ -254,7 +254,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph VNet["vnet-main (10.10.0.0/16)"]
-        subgraph Db["Subnet: snet-db <br/> (10.10.3.0/24)"]
+        subgraph Db["snet-db <br/> (10.10.3.0/24)"]
             DbNSG[NSG: nsg-db]
             PE[Private Endpoint]
             SQL[Azure SQL DB]
@@ -266,9 +266,9 @@ flowchart LR
 ## Stage 5: NAT Gateway (Outbound)
 ```mermaid
 flowchart LR
-    subgraph VNet["VNet: vnet-main (10.10.0.0/16)"]
-        WebSubnet["Subnet: snet-web (10.10.1.0/24)"]
-        AppSubnet["Subnet: snet-app (10.10.2.0/24)"]
+    subgraph VNet["vnet-main (10.10.0.0/16)"]
+        WebSubnet["snet-web (10.10.1.0/24)"]
+        AppSubnet["snet-app (10.10.2.0/24)"]
     end
     WebSubnet --> NAT[NAT Gateway]
     AppSubnet --> NAT
@@ -278,7 +278,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph VNet["vnet-main (10.10.0.0/16)"]
-        subgraph App["Subnet: snet-app <br/> (10.10.2.0/24)"]
+        subgraph App["snet-app <br/> (10.10.2.0/24)"]
             AppNSG[NSG: nsg-app]
             ILB[Internal Load Balancer]
             AppVM[App VM]

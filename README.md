@@ -1,6 +1,6 @@
 # Azure VNets & Subnets (IaC)
 
-Terraform-first Azure networking project focused on VNets, subnets, NSGs, and private connectivity. The repo is built one resource at a time to keep changes clear and repeatable.
+Terraform-first Azure networking project focusing on VNets, subnets, NSGs, and private connectivity. The repo is built one resource at a time to keep changes clear and repeatable.
 
 <img src="img/system_design.png" alt="System design diagram" width="100%">
 

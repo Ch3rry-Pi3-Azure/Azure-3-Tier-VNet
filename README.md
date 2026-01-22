@@ -2,7 +2,7 @@
 
 Terraform-first Azure networking project focused on VNets, subnets, NSGs, and private connectivity. The repo is built one resource at a time to keep changes clear and repeatable.
 
-<img src="img/app.png" alt="VNet demo app" width="100%">
+<img src="img/system_design.png" alt="System design diagram" width="100%">
 
 ## Introduction
 This project builds a small, realistic Azure environment with a public web entry point, an internal app tier, and a private SQL database. Infrastructure is created in clear stages with Terraform, and helper scripts make it easy to deploy or tear down each layer.
@@ -44,16 +44,16 @@ At this stage the deploy script provisions the resource group, virtual network, 
 ```mermaid
 flowchart LR
     Internet("(Internet)") -->|Public HTTP/S| LB["Azure Load Balancer (Public)"]
-    subgraph VNet["VNet: vnet-main (10.10.0.0/16)"]
-        subgraph Web["Subnet: snet-web (10.10.1.0/24)"]
+    subgraph VNet["vnet-main (10.10.0.0/16)"]
+        subgraph Web["snet-web (10.10.1.0/24)"]
             WebNSG["NSG: nsg-web"]
             WebVM["VM/VMSS (Flask)"]
         end
-        subgraph App["Subnet: snet-app (10.10.2.0/24)"]
+        subgraph App["snet-app (10.10.2.0/24)"]
             AppNSG["NSG: nsg-app"]
             AppVM["VM/VMSS (API/service)"]
         end
-        subgraph Db["Subnet: snet-db (10.10.3.0/24)"]
+        subgraph Db["snet-db (10.10.3.0/24)"]
             DbNSG["NSG: nsg-db"]
             PE[Private Endpoint]
             SQL[Azure SQL DB]
@@ -77,7 +77,7 @@ A VNet is your private address space in Azure. It is the boundary where you defi
 ## Stage 2: Subnets
 ```mermaid
 flowchart LR
-    subgraph VNet["VNet: vnet-main (10.10.0.0/16)"]
+    subgraph VNet["vnet-main (10.10.0.0/16)"]
         Web["snet-web<br/>10.10.1.0/24"]
         App["snet-app<br/>10.10.2.0/24"]
         Db["snet-db<br/>10.10.3.0/24"]
@@ -90,7 +90,7 @@ Subnets split the VNet into smaller zones. Think of them as rooms in a building 
 ```mermaid
 flowchart LR
     Internet((Internet)) -->|80/443| Web
-    subgraph VNet["VNet: vnet-main (10.10.0.0/16)"]
+    subgraph VNet["vnet-main (10.10.0.0/16)"]
         Web["snet-web<br/>NSG: nsg-web"]
         App["snet-app<br/>NSG: nsg-app"]
         Db["snet-db<br/>NSG: nsg-db"]
@@ -104,8 +104,8 @@ NSGs are the firewall rules for each subnet. They define who can talk to what an
 ## Stage 4: Private SQL + Private Endpoint
 ```mermaid
 flowchart LR
-    subgraph VNet["VNet: vnet-main (10.10.0.0/16)"]
-        subgraph Db["Subnet: snet-db (10.10.3.0/24)"]
+    subgraph VNet["vnet-main (10.10.0.0/16)"]
+        subgraph Db["snet-db (10.10.3.0/24)"]
             DbNSG[NSG: nsg-db]
             PE[Private Endpoint]
             SQL[Azure SQL DB]
@@ -119,9 +119,9 @@ A Private Endpoint gives Azure SQL a private IP inside the VNet. The app tier ta
 ## Stage 5: NAT Gateway (Outbound)
 ```mermaid
 flowchart LR
-    subgraph VNet["VNet: vnet-main (10.10.0.0/16)"]
-        WebSubnet["Subnet: snet-web (10.10.1.0/24)"]
-        AppSubnet["Subnet: snet-app (10.10.2.0/24)"]
+    subgraph VNet["vnet-main (10.10.0.0/16)"]
+        WebSubnet["snet-web (10.10.1.0/24)"]
+        AppSubnet["snet-app (10.10.2.0/24)"]
     end
     WebSubnet --> NAT[NAT Gateway]
     AppSubnet --> NAT
@@ -132,8 +132,8 @@ NAT is the safe "exit door" for private VMs. It lets them reach the internet for
 ## Stage 6: Internal App Tier
 ```mermaid
 flowchart LR
-    subgraph VNet["VNet: vnet-main (10.10.0.0/16)"]
-        subgraph App["Subnet: snet-app (10.10.2.0/24)"]
+    subgraph VNet["vnet-main (10.10.0.0/16)"]
+        subgraph App["snet-app (10.10.2.0/24)"]
             AppNSG[NSG: nsg-app]
             ILB[Internal Load Balancer]
             AppVM[App VM]
@@ -148,8 +148,8 @@ The app tier is intentionally internal. The internal load balancer provides a st
 ```mermaid
 flowchart LR
     Internet("(Internet)") -->|Public HTTP| LB["Azure Load Balancer (Public)"]
-    subgraph VNet["VNet: vnet-main (10.10.0.0/16)"]
-        subgraph Web["Subnet: snet-web (10.10.1.0/24)"]
+    subgraph VNet["vnet-main (10.10.0.0/16)"]
+        subgraph Web["snet-web (10.10.1.0/24)"]
             WebNSG[NSG: nsg-web]
             WebVM["VM (Flask app)"]
         end
@@ -161,6 +161,8 @@ The public load balancer is the only internet-facing component. It forwards traf
 
 The web VM lives in `snet-web` and only receives inbound traffic from the public load balancer. It has no public IP of its own.
 It serves a simple landing page at `/` plus `/customers` and `/app-status`. The customer list is fetched from the app tier (SQL-backed) when available.
+
+<img src="img/app.png" alt="VNet demo app" width="100%">
 
 ## Resource Naming
 Resources use a prefix plus a random pet suffix for uniqueness, for example:
